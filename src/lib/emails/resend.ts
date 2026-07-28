@@ -8,4 +8,4 @@ if (!process.env.RESEND_API_KEY) {
 export const resend = new Resend(process.env.RESEND_API_KEY);
 
 // L'adresse d'envoi doit utiliser le domaine que tu as vérifié sur Resend
-export const EMAIL_FROM = process.env.EMAIL_FROM || 'noreply@tondomaine.com';
+export const EMAIL_FROM = process.env.EMAIL_FROM || 'contact@morfycam.com';

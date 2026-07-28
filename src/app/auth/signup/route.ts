@@ -30,7 +30,7 @@ export async function POST(req: Request) {
   await sendWelcomeEmail({
     to: email,
     prenom,
-    lienDashboard: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`,
+    lienApp: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`,
   });
 
   return NextResponse.json({ user: data.user });
