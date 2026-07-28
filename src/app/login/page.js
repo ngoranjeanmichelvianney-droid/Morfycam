@@ -122,9 +122,14 @@ export default function Login() {
             </div>
 
             <div>
-              <label htmlFor="mot-de-passe" className="font-mono text-xs uppercase tracking-widest text-sand-dim">
-                Mot de passe
-              </label>
+              <div className="flex items-center justify-between">
+                <label htmlFor="mot-de-passe" className="font-mono text-xs uppercase tracking-widest text-sand-dim">
+                  Mot de passe
+                </label>
+                <Link href="/forgot-password" className="text-xs text-sand-dim hover:text-mirage transition">
+                  Mot de passe oublié ?
+                </Link>
+              </div>
               <input
                 id="mot-de-passe"
                 type="password"

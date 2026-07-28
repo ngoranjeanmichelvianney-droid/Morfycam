@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Paiement confirmé</title>
+</head>
+<body style="margin:0;padding:0;background-color:#0a0a0f;font-family:Arial,Helvetica,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#0a0a0f;padding:40px 0;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="480" cellpadding="0" cellspacing="0" style="background-color:#13131a;border-radius:16px;overflow:hidden;">
+          <tr>
+            <td style="background:#0a0a0f;padding:32px;text-align:center;">
+              <img src="https://morfycam.com/logos/L7.jpeg" alt="MorfyCam" width="160" style="display:block;margin:0 auto;" />
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:32px;color:#e5e5e5;">
+              <h2 style="color:#4ade80;font-size:20px;margin-top:0;">✅ Paiement confirmé</h2>
+              <p style="line-height:1.6;font-size:15px;">
+                Salut {{PRENOM}}, on a bien reçu ton paiement. Ton offre est maintenant active !
+              </p>
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#1c1c26;border-radius:10px;margin:20px 0;">
+                <tr>
+                  <td style="padding:20px;">
+                    <table role="presentation" width="100%" cellpadding="6" cellspacing="0" style="font-size:14px;color:#cccccc;">
+                      <tr><td>Offre</td><td align="right" style="color:#ffffff;font-weight:bold;">{{NOM_OFFRE}}</td></tr>
+                      <tr><td>Montant</td><td align="right" style="color:#ffffff;font-weight:bold;">{{MONTANT}} FCFA</td></tr>
+                      <tr><td>Référence</td><td align="right" style="color:#ffffff;">{{REFERENCE}}</td></tr>
+                      <tr><td>Date</td><td align="right" style="color:#ffffff;">{{DATE}}</td></tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+              <table role="presentation" cellpadding="0" cellspacing="0" style="margin:12px 0;">
+                <tr>
+                  <td style="background:linear-gradient(135deg,#22d3ee,#7c3aed);border-radius:8px;">
+                    <a href="{{LIEN_APP}}" style="display:inline-block;padding:14px 28px;color:#ffffff;text-decoration:none;font-weight:bold;font-size:15px;">
+                      Accéder à mon offre →
+                    </a>
+                  </td>
+                </tr>
+              </table>
+              <p style="line-height:1.6;font-size:13px;color:#999999;">
+                Garde cet email comme preuve de paiement. Une question ? Réponds directement ici.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:20px 32px;background-color:#0a0a0f;text-align:center;">
+              <p style="color:#666666;font-size:12px;margin:0;">© 2026 MorfyCam — morfycam.com</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

@@ -62,6 +62,11 @@ export default function RegisterForm() {
       return;
     }
 
+    // Note : l'email de bienvenue est envoyé plus tard, dans
+    // /auth/callback, une fois que l'utilisateur a confirmé son
+    // adresse (ou lors de sa première connexion OAuth) — pas ici,
+    // pour ne pas l'envoyer avant que le compte soit vraiment actif.
+
     if (data.session) {
       router.push("/dashboard");
     } else {

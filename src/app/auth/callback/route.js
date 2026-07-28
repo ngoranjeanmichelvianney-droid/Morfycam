@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { creerClientServeur } from "@/lib/supabaseServer";
+import { sendWelcomeEmail } from "@/lib/emails/send";
 
 export async function GET(request) {
   const { searchParams, origin } = new URL(request.url);
@@ -32,6 +33,37 @@ export async function GET(request) {
             .update({ parrain_id: parrain.id })
             .eq("id", data.user.id)
             .is("parrain_id", null);
+        }
+      }
+
+      // Envoie l'email de bienvenue une seule fois : que ce soit la
+      // première confirmation d'email (signup classique) ou la toute
+      // première connexion OAuth. On vérifie le flag avant d'envoyer,
+      // puis on le passe à true pour ne jamais renvoyer aux connexions
+      // suivantes.
+      if (data?.user) {
+        const { data: profil } = await supabase
+          .from("profils")
+          .select("email_bienvenue_envoye, nom_affichage")
+          .eq("id", data.user.id)
+          .maybeSingle();
+
+        if (profil && !profil.email_bienvenue_envoye) {
+          try {
+            await sendWelcomeEmail({
+              to: data.user.email,
+              prenom: profil.nom_affichage || data.user.user_metadata?.nom_affichage || "toi",
+              lienApp: `${origin}/dashboard`,
+            });
+          } catch (err) {
+            // On ne bloque jamais la connexion si l'email échoue
+            console.error("Erreur envoi email bienvenue:", err);
+          }
+
+          await supabase
+            .from("profils")
+            .update({ email_bienvenue_envoye: true })
+            .eq("id", data.user.id);
         }
       }
 
