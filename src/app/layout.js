@@ -34,6 +34,37 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="fr">
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Organization",
+              name: "MorfyCam",
+              url: "https://morfycam.com",
+              logo: "https://morfycam.com/logos/L7.jpeg",
+              sameAs: [],
+            }),
+          }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebSite",
+              name: "MorfyCam",
+              url: "https://morfycam.com",
+              potentialAction: {
+                "@type": "SearchAction",
+                target: "https://morfycam.com/dashboard?q={search_term_string}",
+                "query-input": "required name=search_term_string",
+              },
+            }),
+          }}
+        />
+      </head>
       <body
         className={`${instrumentSerif.variable} ${workSans.variable} ${plexMono.variable} antialiased`}
       >
