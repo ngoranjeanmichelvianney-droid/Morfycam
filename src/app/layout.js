@@ -21,8 +21,14 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata = {
-  title: "VibeCam — Transformation faciale en direct",
+  title: "MorfyCam — Transformation faciale en direct",
   description: "Change de visage en temps réel pendant tes lives, appels et vidéos.",
+  openGraph: {
+    title: "MorfyCam — Transformation faciale en direct",
+    description: "Change de visage en temps réel pendant tes lives, appels et vidéos.",
+    url: "https://morfycam.com",
+    siteName: "MorfyCam",
+  },
 };
 
 export default function RootLayout({ children }) {

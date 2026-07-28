@@ -291,9 +291,11 @@ export default function Home() {
         <div className="orb-3" />
 
         {/* Nav — fixed */}
-        <nav className="fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-6 py-5 backdrop-blur md:px-12"
+        <nav className="fixed top-0 left-0 right-0 z-40 flex items-center justify-between gap-2 px-4 py-3 backdrop-blur sm:px-6 sm:py-5 md:px-12"
           style={{ background: "rgba(0,0,0,0.55)", borderBottom: "1px solid rgba(0,68,129,0.2)" }}>
-          <Logo />
+          <div className="scale-90 origin-left sm:scale-100">
+            <Logo />
+          </div>
           <div className="hidden gap-6 text-sm text-sand-dim lg:flex">
             <a href="#usages" className="nav-link">Fonctionnalités</a>
             <a href="#comment-ca-marche" className="nav-link">Comment ça marche</a>
@@ -303,13 +305,13 @@ export default function Home() {
             <a href="#tarifs" className="nav-link">Tarifs</a>
             <a href="#faq" className="nav-link">FAQ</a>
           </div>
-          <div className="flex items-center gap-4">
-            <a href="/login" className="text-sm text-sand-dim hover:text-sand transition">
+          <div className="flex shrink-0 items-center gap-2 sm:gap-4">
+            <a href="/login" className="whitespace-nowrap text-xs text-sand-dim hover:text-sand transition sm:text-sm">
               Se connecter
             </a>
             <a
               href="/register"
-              className="rounded-full bg-ember px-5 py-2 text-sm font-medium text-ink hover:opacity-90 transition"
+              className="whitespace-nowrap rounded-full bg-ember px-3 py-1.5 text-xs font-medium text-ink hover:opacity-90 transition sm:px-5 sm:py-2 sm:text-sm"
             >
               Commencer
             </a>
