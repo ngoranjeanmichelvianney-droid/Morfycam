@@ -99,9 +99,6 @@ const OFFRES = [
   },
 ];
 
-// Seuls Wave et Orange Money sont branchés sur l'auto-crédit par SMS
-// (voir GUIDE_MACRODROID.md). Les autres restent affichés mais désactivés
-// tant qu'ils ne sont pas connectés au même système — ou à CinetPay plus tard.
 const MOYENS_PAIEMENT = [
   {
     id: "orange",
@@ -122,8 +119,6 @@ const MOYENS_PAIEMENT = [
   { id: "djamo", nom: "Djamo", logo: "/logos/L5.jpeg", automatise: false },
 ];
 
-// Liens de paiement fixes générés une fois dans l'appli Wave Business et
-// OM Business (un lien par montant de pack) — TODO: colle tes vrais liens ici.
 const LIENS_PAIEMENT = {
   "10k": { wave: "https://wave.com/pay/REMPLACER_10K", orange_money: "https://om.ci/pay/REMPLACER_10K" },
   "20k": { wave: "https://wave.com/pay/REMPLACER_20K", orange_money: "https://om.ci/pay/REMPLACER_20K" },
@@ -132,14 +127,8 @@ const LIENS_PAIEMENT = {
   "100k": { wave: "https://wave.com/pay/REMPLACER_100K", orange_money: "https://om.ci/pay/REMPLACER_100K" },
 };
 
-// Combien de temps on attend le SMS avant de dire à l'utilisateur que
-// quelque chose ne va pas (doit rester cohérent avec la fenêtre de 30 min
-// côté fonction SQL expirer_demandes_recharge).
 const DELAI_EXPIRATION_MS = 30 * 60 * 1000;
 
-// Styles proposés pour la retouche IA de l'avatar (envoyés comme "prompt"
-// à fal-ai/image-editing/style-transfer — à confirmer dans le Playground
-// fal.ai avant la prod, le nom exact du champ n'est pas garanti).
 const STYLES_DISPONIBLES = [
   { id: null, label: "Aucun effet" },
   { id: "cartoon vibrant, contours nets, couleurs saturées", label: "Cartoon" },
@@ -147,7 +136,6 @@ const STYLES_DISPONIBLES = [
   { id: "anime japonais, grands yeux, lignes fines", label: "Anime" },
 ];
 
-// Décompose un nombre de secondes en { h, m, s } (chaînes à 2 chiffres)
 function decomposerTemps(totalSecondes) {
   const total = Math.max(0, Math.floor(totalSecondes));
   const h = Math.floor(total / 3600);
@@ -160,7 +148,6 @@ function decomposerTemps(totalSecondes) {
   };
 }
 
-// Formatte une date en français : "26 juil. 2026 à 14:32"
 function formatDateHeure(date) {
   const datePart = date.toLocaleDateString("fr-FR", {
     day: "2-digit",
@@ -171,11 +158,9 @@ function formatDateHeure(date) {
     hour: "2-digit",
     minute: "2-digit",
   });
-  return `${datePart} à ${heurePart}`;  
+  return `${datePart} à ${heurePart}`;
 }
 
-// Convertit une data URL (base64, issue de FileReader) en Blob
-// uploadable vers Supabase Storage.
 function dataURLVersBlob(dataURL) {
   const [entete, base64] = dataURL.split(",");
   const correspondanceMime = entete.match(/:(.*?);/);
@@ -200,36 +185,23 @@ export default function Dashboard() {
   const [peripheriques, setPeripheriques] = useState([]);
   const [erreurCamera, setErreurCamera] = useState(null);
   const [connexionEnCours, setConnexionEnCours] = useState(false);
-  const [fluxBrut, setFluxBrut] = useState(null); // flux caméra original, pour l'affichage
+  const [fluxBrut, setFluxBrut] = useState(null);
   const [indexPhrase, setIndexPhrase] = useState(0);
 
-  // Retouche IA de l'avatar (fal.ai) : suppression de fond et style sont
-  // au choix de l'utilisateur — l'amélioration de qualité, elle, est
-  // toujours appliquée automatiquement côté serveur, sans option.
   const [enleverFond, setEnleverFond] = useState(false);
   const [styleChoisi, setStyleChoisi] = useState(null);
   const [traitementAvatarEnCours, setTraitementAvatarEnCours] = useState(false);
 
-  // Crédit de temps restant (en secondes), chargé depuis profils.solde_secondes
-  // (lui-même recalculé côté base à partir des lots de temps non expirés).
-  // 0 par défaut tant que la vraie valeur n'est pas encore arrivée de Supabase,
-  // pour ne pas laisser croire à l'utilisateur qu'il a du temps gratuit.
   const [secondesRestantes, setSecondesRestantes] = useState(0);
   const [soldeCharge, setSoldeCharge] = useState(false);
 
-  // Historique des sessions de swap déjà utilisées (date + durée),
-  // chargé depuis la table sessions_utilisation.
   const [historiqueUtilisation, setHistoriqueUtilisation] = useState([]);
 
-  // Avatars enregistrés : métadonnées depuis avatars_utilisateur,
-  // fichiers réels sur Supabase Storage (bucket privé "avatars").
   const [avatarsEnregistres, setAvatarsEnregistres] = useState([]);
   const [enregistrementAvatarEnCours, setEnregistrementAvatarEnCours] = useState(false);
 
-  // Recharge / paiement
   const [modalRechargeOuvert, setModalRechargeOuvert] = useState(false);
   const [offreSelectionnee, setOffreSelectionnee] = useState(null);
-  // "offres" : liste des packs à choisir — "paiement" : moyens de paiement pour le pack déjà choisi
   const [etapeModal, setEtapeModal] = useState("offres");
   const [envoiDemandeEnCours, setEnvoiDemandeEnCours] = useState(false);
 
@@ -252,8 +224,6 @@ export default function Dashboard() {
     setMonte(true);
   }, []);
 
-  // Charge le solde réel et l'historique des sessions dès qu'on connaît
-  // l'utilisateur — remplace les anciennes valeurs codées en dur.
   useEffect(() => {
     if (!utilisateur?.id) return;
 
@@ -305,8 +275,6 @@ export default function Dashboard() {
     };
   }, [utilisateur?.id]);
 
-  // Charge la liste des avatars enregistrés (métadonnées + URL signée
-  // temporaire, puisque le bucket "avatars" est privé).
   const chargerAvatars = useCallback(async () => {
     if (!utilisateur?.id) return;
 
@@ -341,7 +309,6 @@ export default function Dashboard() {
     chargerAvatars();
   }, [chargerAvatars]);
 
-  // Liste des caméras disponibles pour le sélecteur
   useEffect(() => {
     navigator.mediaDevices
       ?.enumerateDevices()
@@ -349,7 +316,6 @@ export default function Dashboard() {
       .catch(() => {});
   }, []);
 
-  // Fait défiler les phrases d'accroche automatiquement
   useEffect(() => {
     const intervalId = setInterval(() => {
       setIndexPhrase((i) => (i + 1) % phrasesMarketing.length);
@@ -357,10 +323,6 @@ export default function Dashboard() {
     return () => clearInterval(intervalId);
   }, []);
 
-  // Décompte le temps restant uniquement quand le swap est actif en Direct.
-  // Ce décompte reste local pour une UI fluide seconde par seconde — la
-  // valeur réelle en base n'est mise à jour qu'à l'arrêt de la caméra
-  // (voir arreterCamera), pour éviter d'écrire dans Supabase 1x/seconde.
   useEffect(() => {
     if (!cameraActive || !enDirect) return;
     const intervalId = setInterval(() => {
@@ -369,9 +331,6 @@ export default function Dashboard() {
     return () => clearInterval(intervalId);
   }, [cameraActive, enDirect]);
 
-  // Coupe automatiquement le swap dès que le temps est épuisé pendant
-  // une session active — sans ça, l'appel continue indéfiniment une fois
-  // le compteur arrivé à 00:00:00 puisque rien ne l'arrête de lui-même.
   useEffect(() => {
     if (cameraActive && enDirect && secondesRestantes <= 0) {
       arreterCamera();
@@ -379,7 +338,6 @@ export default function Dashboard() {
     }
   }, [secondesRestantes, cameraActive, enDirect]);
 
-  // Nettoyage à la sortie du composant
   useEffect(() => {
     return () => {
       streamRef.current?.getTracks().forEach((t) => t.stop());
@@ -387,10 +345,6 @@ export default function Dashboard() {
     };
   }, []);
 
-  // Attache le flux caméra brut via une ref-callback : contrairement à un
-  // useEffect classique, elle se redéclenche à CHAQUE montage du <video>,
-  // même si l'élément est démonté puis remonté (ex: bascule vers/depuis
-  // le spinner "Connexion en cours…").
   const attacherVideoOriginale = useCallback(
     (element) => {
       videoRef.current = element;
@@ -409,7 +363,6 @@ export default function Dashboard() {
       setAvatarSource(e.target.result);
       setResultat(null);
       setEnTraitement(true);
-      // Placeholder — pas encore de logique IA branchée à ce stade.
       setTimeout(() => {
         setResultat(e.target.result);
         setEnTraitement(false);
@@ -418,10 +371,6 @@ export default function Dashboard() {
     lecteur.readAsDataURL(fichier);
   }, []);
 
-  // Envoie l'avatar actuel à la route serveur /api/fal/traiter-avatar :
-  // amélioration de qualité toujours appliquée, suppression de fond et
-  // style seulement si l'utilisateur les a choisis. Remplace ensuite
-  // avatarSource par le résultat traité.
   const ameliorerAvatarAvecIA = useCallback(async () => {
     if (!avatarSource) return;
 
@@ -455,16 +404,11 @@ export default function Dashboard() {
     }
   }, [avatarSource, enleverFond, styleChoisi]);
 
-  // Upload l'avatar actuellement chargé (avatarSource) vers Supabase
-  // Storage, dans le dossier de l'utilisateur, puis enregistre la
-  // référence en base pour qu'il réapparaisse dans "Avatars enregistrés".
   const enregistrerAvatarActuel = useCallback(async () => {
     if (!avatarSource || !utilisateur?.id) return;
 
     setEnregistrementAvatarEnCours(true);
 
-    // avatarSource peut être une data URL (upload local) ou une URL http
-    // (résultat renvoyé par fal.ai) — on gère les deux avant l'upload.
     const blob = avatarSource.startsWith("data:")
       ? dataURLVersBlob(avatarSource)
       : await (await fetch(avatarSource)).blob();
@@ -495,8 +439,6 @@ export default function Dashboard() {
     chargerAvatars();
   }, [avatarSource, utilisateur?.id, chargerAvatars]);
 
-  // Supprime un avatar enregistré : à la fois le fichier sur Storage
-  // et sa référence en base.
   const supprimerAvatar = useCallback(
     async (avatar) => {
       const { error: erreurSuppressionFichier } = await supabase.storage
@@ -523,9 +465,6 @@ export default function Dashboard() {
     async (deviceId) => {
       setErreurCamera(null);
       try {
-        // Contraintes alignées sur le modèle Decart (fps/width/height) :
-        // un décalage ici peut faire croire que le flux transformé ne
-        // suit pas les mouvements de la personne.
         const stream = await navigator.mediaDevices.getUserMedia({
           video: {
             ...(deviceId ? { deviceId: { exact: deviceId } } : {}),
@@ -537,10 +476,9 @@ export default function Dashboard() {
         });
         streamRef.current = stream;
         debutSessionRef.current = Date.now();
-        setFluxBrut(stream); // déclenche l'attachement via le useEffect ci-dessus
+        setFluxBrut(stream);
         setCameraActive(true);
 
-        // Si un avatar est chargé et qu'on est en mode Direct, on branche Decart
         if (enDirect && avatarSource) {
           setConnexionEnCours(true);
           try {
@@ -589,13 +527,6 @@ export default function Dashboard() {
     setFluxBrut(null);
     setCameraActive(false);
 
-    // Enregistre la session dans l'historique local (date + durée utilisée)
-    // ET persiste en base : insère la session dans sessions_utilisation.
-    // C'est cet insert qui déclenche le trigger SQL
-    // apres_session_debiter_solde, lequel décrémente les lots de temps
-    // (en security definer, donc pas soumis à RLS). On ne fait jamais
-    // d'update direct sur profils depuis le navigateur : il n'y a
-    // volontairement pas de policy RLS "update" sur cette table.
     if (debutSessionRef.current && utilisateur?.id) {
       const debut = new Date(debutSessionRef.current);
       const fin = new Date();
@@ -631,8 +562,6 @@ export default function Dashboard() {
     setModalRechargeOuvert(true);
   }
 
-  // Utilisée par le bouton "Choisir cette offre" sur les cartes de tarifs :
-  // saute directement à l'étape paiement, pas besoin de re-choisir le pack.
   function ouvrirModalAvecOffre(idOffre) {
     setOffreSelectionnee(idOffre);
     setEtapeModal("paiement");
@@ -648,10 +577,6 @@ export default function Dashboard() {
     setEtapeModal("paiement");
   }
 
-  // Clic sur un moyen de paiement : crée d'abord la demande de recharge
-  // "en_attente" en base (c'est elle que le script SMS ou le webhook
-  // CinetPay ira valider par la suite), puis ouvre la page de paiement
-  // Wave/OM pour le montant exact du pack choisi, dans un nouvel onglet.
   async function payerAvec(moyen) {
     if (!moyen.automatise || !utilisateur?.id || !offreSelectionnee) return;
 
@@ -673,9 +598,6 @@ export default function Dashboard() {
 
     if (error) {
       console.error("Erreur création de la demande de recharge :", error);
-      // On laisse quand même l'utilisateur payer — le script d'auto-crédit
-      // par SMS pourra créer la demande de son côté si besoin. À terme,
-      // mieux vaut bloquer ici et afficher une erreur claire à l'utilisateur.
     }
 
     window.open(lien, "_blank", "noopener,noreferrer");
@@ -734,15 +656,12 @@ export default function Dashboard() {
       `}</style>
 
       <main className="dashboard-bg relative min-h-screen overflow-x-hidden text-sand">
-        {/* Orbes animés en fond */}
         <div className="dashboard-orb-1" />
         <div className="dashboard-orb-2" />
 
-        {/* Bandeau d'alerte recharge — visible seulement si le temps est épuisé
-            (uniquement une fois le vrai solde chargé, pour ne pas clignoter
-            "épuisé" pendant l'instant où secondesRestantes vaut encore 0) */}
+        {/* Bandeau d'alerte recharge */}
         {soldeCharge && secondesRestantes <= 0 && (
-          <div className="carte-animee flex items-center justify-center gap-3 bg-gradient-to-r from-ember to-mirage px-4 py-2 text-center text-sm font-medium text-ink">
+          <div className="carte-animee flex flex-col items-center justify-center gap-2 bg-gradient-to-r from-ember to-mirage px-4 py-3 text-center text-xs text-ink sm:flex-row sm:gap-3 sm:py-2 sm:text-sm sm:font-medium">
             <span>Ton temps est épuisé — recharge pour continuer le swap</span>
             <button
               onClick={ouvrirModalRecharge}
@@ -755,12 +674,12 @@ export default function Dashboard() {
 
         {/* Barre supérieure */}
         <div
-          className={`flex flex-wrap items-center justify-between gap-3 border-b border-sand-dim/15 bg-umber/70 backdrop-blur-md px-6 py-4 transition-opacity duration-500 ${
+          className={`flex flex-col items-start gap-3 border-b border-sand-dim/15 bg-umber/70 backdrop-blur-md px-4 py-3 transition-opacity duration-500 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:px-6 sm:py-4 ${
             monte ? "opacity-100" : "opacity-0"
           }`}
         >
           <div>
-            <h1 className="font-display text-2xl italic">
+            <h1 className="font-display text-xl italic sm:text-2xl">
               <span className="bg-[length:200%_auto] bg-clip-text text-transparent bg-gradient-to-r from-mirage via-ember to-mirage animate-[text-shimmer_5s_linear_infinite]">
                 Swap en temps réel
               </span>
@@ -770,7 +689,7 @@ export default function Dashboard() {
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:gap-3">
             <button
               onClick={ouvrirModalRecharge}
               className="rounded-full bg-ember px-4 py-1.5 text-xs font-medium text-ink transition-all duration-200 hover:opacity-90"
@@ -800,8 +719,8 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Section Temps restant — grande et colorée */}
-        <section className="carte-animee relative border-b border-sand-dim/15 bg-[#18181b] px-6 py-8 text-center">
+        {/* Section Temps restant */}
+        <section className="carte-animee relative border-b border-sand-dim/15 bg-[#18181b] px-4 py-6 text-center sm:px-6 sm:py-8">
           <div className="relative mx-auto max-w-xl">
             <p className="font-mono text-[11px] uppercase tracking-widest text-violet">
               Temps restant
@@ -811,46 +730,46 @@ export default function Dashboard() {
               const { h, m, s } = decomposerTemps(secondesRestantes);
               const critique = secondesRestantes <= 60;
               return (
-                <div className="mt-4 flex items-end justify-center gap-3 sm:gap-5">
+                <div className="mt-4 flex items-end justify-center gap-1.5 xs:gap-2 sm:gap-5">
                   <div className="flex flex-col items-center">
                     <span
-                      className={`font-mono text-4xl font-bold leading-none sm:text-5xl ${
+                      className={`font-mono text-2xl font-bold leading-none sm:text-5xl ${
                         critique ? "text-ember" : "text-violet"
                       }`}
                     >
                       {h}
                     </span>
-                    <span className="mt-1 text-[10px] uppercase tracking-widest text-sand-dim">
+                    <span className="mt-1 text-[9px] uppercase tracking-widest text-sand-dim sm:text-[10px]">
                       Heures
                     </span>
                   </div>
 
-                  <span className="pb-4 font-mono text-3xl text-sand-dim/40 sm:text-4xl">:</span>
+                  <span className="pb-3 font-mono text-xl text-sand-dim/40 sm:pb-4 sm:text-4xl">:</span>
 
                   <div className="flex flex-col items-center">
                     <span
-                      className={`font-mono text-6xl font-extrabold leading-none sm:text-8xl ${
+                      className={`font-mono text-4xl font-extrabold leading-none sm:text-8xl ${
                         critique ? "text-ember" : "text-[#e8dcc4]"
                       }`}
                     >
                       {m}
                     </span>
-                    <span className="mt-1 text-xs font-medium uppercase tracking-widest text-sand-dim">
+                    <span className="mt-1 text-[10px] font-medium uppercase tracking-widest text-sand-dim sm:text-xs">
                       Minutes
                     </span>
                   </div>
 
-                  <span className="pb-4 font-mono text-3xl text-sand-dim/40 sm:text-4xl">:</span>
+                  <span className="pb-3 font-mono text-xl text-sand-dim/40 sm:pb-4 sm:text-4xl">:</span>
 
                   <div className="flex flex-col items-center">
                     <span
-                      className={`font-mono text-4xl font-bold leading-none sm:text-5xl ${
+                      className={`font-mono text-2xl font-bold leading-none sm:text-5xl ${
                         critique ? "text-ember" : "text-jaune"
                       }`}
                     >
                       {s}
                     </span>
-                    <span className="mt-1 text-[10px] uppercase tracking-widest text-sand-dim">
+                    <span className="mt-1 text-[9px] uppercase tracking-widest text-sand-dim sm:text-[10px]">
                       Secondes
                     </span>
                   </div>
@@ -875,8 +794,8 @@ export default function Dashboard() {
           </div>
         </section>
 
-        {/* Section Historique d'utilisation — temps déjà utilisé + dates */}
-        <section className="border-b border-sand-dim/15 bg-umber/60 backdrop-blur-md px-6 py-6">
+        {/* Section Historique d'utilisation */}
+        <section className="border-b border-sand-dim/15 bg-umber/60 backdrop-blur-md px-4 py-5 sm:px-6 sm:py-6">
           <div className="mx-auto max-w-3xl">
             <div className="flex items-center justify-between">
               <p className="font-mono text-[11px] uppercase tracking-widest text-mirage">
@@ -904,7 +823,7 @@ export default function Dashboard() {
                   return (
                     <div
                       key={session.id}
-                      className={`flex flex-wrap items-center justify-between gap-2 rounded-xl border-l-4 bg-ink px-4 py-3 border-${couleur}`}
+                      className={`flex flex-col gap-2 rounded-xl border-l-4 bg-ink px-4 py-3 border-${couleur} sm:flex-row sm:flex-wrap sm:items-center sm:justify-between`}
                     >
                       <div>
                         <p className="text-sm text-sand">
@@ -918,7 +837,7 @@ export default function Dashboard() {
                           })}
                         </p>
                       </div>
-                      <p className={`font-mono text-lg font-semibold text-${couleur}`}>
+                      <p className={`font-mono text-base font-semibold text-${couleur} sm:text-lg`}>
                         {h !== "00" ? `${h}h ` : ""}
                         {m}min {s}s
                       </p>
@@ -930,8 +849,8 @@ export default function Dashboard() {
           </div>
         </section>
 
-        {/* Corps : 2 colonnes */}
-        <div className="grid grid-cols-1 gap-4 p-4 lg:grid-cols-[240px_1fr]">
+        {/* Corps : 2 colonnes (empilées sur mobile) */}
+        <div className="grid grid-cols-1 gap-4 p-3 sm:p-4 lg:grid-cols-[240px_1fr]">
           {/* Colonne gauche — Source + Original */}
           <section
             className={`rounded-xl border border-sand-dim/15 bg-umber/60 backdrop-blur-md p-4 transition-all duration-500 delay-75 carte-animee ${
@@ -954,7 +873,7 @@ export default function Dashboard() {
                 setSurvolAvatar(true);
               }}
               onDragLeave={() => setSurvolAvatar(false)}
-              className={`mt-3 flex aspect-square cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed bg-ink text-center transition-all duration-300 ${
+              className={`mt-3 flex aspect-square w-full max-w-[280px] mx-auto cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed bg-ink text-center transition-all duration-300 lg:max-w-none ${
                 survolAvatar
                   ? "scale-[1.02] border-mirage shadow-[0_0_24px_-8px_theme(colors.mirage)]"
                   : "border-sand-dim/20 hover:border-mirage/50"
@@ -984,9 +903,6 @@ export default function Dashboard() {
               Charger une image
             </button>
 
-            {/* Retouche IA de l'avatar — l'amélioration de qualité est
-                toujours appliquée automatiquement côté serveur ; seuls
-                la suppression de fond et le style sont au choix ici. */}
             {avatarSource && (
               <div className="mt-4 space-y-2 rounded-lg border border-sand-dim/15 bg-ink p-3">
                 <p className="font-mono text-[10px] uppercase tracking-widest text-jaune">
@@ -1088,13 +1004,13 @@ export default function Dashboard() {
 
           {/* Colonne centrale — Caméra / Transformation */}
           <section
-            className={`flex min-h-[70vh] flex-col rounded-xl border border-sand-dim/15 bg-umber/60 backdrop-blur-md p-4 transition-all duration-500 delay-150 carte-animee ${
+            className={`flex min-h-[50vh] flex-col rounded-xl border border-sand-dim/15 bg-umber/60 backdrop-blur-md p-4 transition-all duration-500 delay-150 carte-animee sm:min-h-[60vh] lg:min-h-[70vh] ${
               monte ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"
             }`}
           >
             {cameraActive ? (
               <div className="flex h-full flex-col">
-                <div className="mb-2 flex items-center justify-between">
+                <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                   <p className="font-mono text-[11px] uppercase tracking-widest text-ember">
                     {enDirect ? "Flux transformé" : "Caméra"}
                   </p>
@@ -1108,7 +1024,7 @@ export default function Dashboard() {
 
                 <div className="relative flex flex-1 items-center justify-center overflow-hidden rounded-lg bg-ink">
                   {connexionEnCours ? (
-                    <div className="flex flex-col items-center gap-3">
+                    <div className="flex flex-col items-center gap-3 px-4 text-center">
                       <span className="h-8 w-8 animate-spin rounded-full border-2 border-mirage/25 border-t-mirage" />
                       <p className="text-xs text-sand-dim">Connexion du flux temps réel…</p>
                     </div>
@@ -1139,7 +1055,7 @@ export default function Dashboard() {
                 </p>
                 <div className="relative flex flex-1 items-center justify-center overflow-hidden rounded-lg bg-ink">
                   {enTraitement ? (
-                    <div className="flex flex-col items-center gap-3">
+                    <div className="flex flex-col items-center gap-3 px-4 text-center">
                       <span className="h-8 w-8 animate-spin rounded-full border-2 border-mirage/25 border-t-mirage" />
                       <p className="text-xs text-sand-dim">Génération en cours…</p>
                     </div>
@@ -1157,7 +1073,7 @@ export default function Dashboard() {
                 </div>
               </div>
             ) : (
-              <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center">
+              <div className="flex flex-1 flex-col items-center justify-center gap-3 px-4 text-center">
                 <span className="flex h-14 w-14 items-center justify-center rounded-full border border-sand-dim/20 text-2xl text-sand-dim">
                   ◎
                 </span>
@@ -1174,14 +1090,14 @@ export default function Dashboard() {
 
         {/* Barre inférieure */}
         <div
-          className={`flex flex-wrap items-center justify-between gap-3 border-t border-sand-dim/15 bg-umber/70 backdrop-blur-md px-6 py-3 transition-opacity duration-500 delay-300 ${
+          className={`flex flex-col gap-3 border-t border-sand-dim/15 bg-umber/70 backdrop-blur-md px-4 py-3 transition-opacity duration-500 delay-300 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:px-6 ${
             monte ? "opacity-100" : "opacity-0"
           }`}
         >
-          <div className="flex flex-wrap items-center gap-3 text-sm">
+          <div className="grid grid-cols-1 gap-2 text-sm xs:grid-cols-2 sm:flex sm:flex-wrap sm:items-center sm:gap-3">
             <select
               onChange={(e) => demarrerCamera(e.target.value)}
-              className="rounded-lg border border-sand-dim/20 bg-ink px-3 py-1.5 text-sand-dim outline-none transition-colors focus:border-mirage"
+              className="w-full rounded-lg border border-sand-dim/20 bg-ink px-3 py-1.5 text-sand-dim outline-none transition-colors focus:border-mirage sm:w-auto"
             >
               <option value="">Sélectionner une caméra…</option>
               {peripheriques.map((d) => (
@@ -1190,19 +1106,19 @@ export default function Dashboard() {
                 </option>
               ))}
             </select>
-            <select className="rounded-lg border border-sand-dim/20 bg-ink px-3 py-1.5 text-sand-dim outline-none transition-colors focus:border-mirage">
+            <select className="w-full rounded-lg border border-sand-dim/20 bg-ink px-3 py-1.5 text-sand-dim outline-none transition-colors focus:border-mirage sm:w-auto">
               <option>480p</option>
               <option>720p</option>
               <option>1080p</option>
             </select>
-            <button className="rounded-lg border border-sand-dim/20 px-3 py-1.5 text-sand-dim transition-colors duration-200 hover:border-mirage hover:text-sand">
+            <button className="w-full rounded-lg border border-sand-dim/20 px-3 py-1.5 text-sand-dim transition-colors duration-200 hover:border-mirage hover:text-sand xs:col-span-2 sm:w-auto">
               Détecter
             </button>
           </div>
 
           <button
             onClick={toggleCamera}
-            className={`rounded-full px-6 py-2 text-sm font-medium transition-all duration-200 ${
+            className={`w-full rounded-full px-6 py-2 text-sm font-medium transition-all duration-200 sm:w-auto ${
               cameraActive
                 ? "border border-sand-dim/25 bg-ink text-sand hover:border-ember hover:text-ember"
                 : "bg-ember text-ink hover:opacity-90 hover:shadow-[0_0_24px_-6px_theme(colors.ember)]"
@@ -1212,8 +1128,8 @@ export default function Dashboard() {
           </button>
         </div>
 
-        {/* Section marketing — accroche animée */}
-        <section className="relative overflow-hidden border-t border-sand-dim/15 bg-gradient-to-br from-umber/40 via-ink/40 to-umber/40 backdrop-blur-sm px-6 py-16 text-center">
+        {/* Section marketing */}
+        <section className="relative overflow-hidden border-t border-sand-dim/15 bg-gradient-to-br from-umber/40 via-ink/40 to-umber/40 backdrop-blur-sm px-4 py-12 text-center sm:px-6 sm:py-16">
           <div className="pointer-events-none absolute inset-0 opacity-30">
             <div className="absolute left-1/4 top-0 h-64 w-64 rounded-full bg-mirage/20 blur-3xl" />
             <div className="absolute right-1/4 bottom-0 h-64 w-64 rounded-full bg-ember/20 blur-3xl" />
@@ -1226,7 +1142,7 @@ export default function Dashboard() {
 
             <p
               key={indexPhrase}
-              className="mt-4 min-h-[3.5rem] font-display text-2xl italic text-sand animate-[fade-up_0.5s_ease-out] sm:text-3xl"
+              className="mt-4 min-h-[4.5rem] font-display text-xl italic text-sand animate-[fade-up_0.5s_ease-out] sm:min-h-[3.5rem] sm:text-2xl md:text-3xl"
             >
               {phrasesMarketing[indexPhrase]}
             </p>
@@ -1278,13 +1194,13 @@ export default function Dashboard() {
           </div>
         </section>
 
-        {/* Tarifs — visible en scrollant en bas du dashboard */}
-        <section id="tarifs" className="border-t border-sand-dim/15 px-6 py-16">
+        {/* Tarifs */}
+        <section id="tarifs" className="border-t border-sand-dim/15 px-4 py-12 sm:px-6 sm:py-16">
           <div className="mx-auto max-w-5xl text-center">
             <p className="font-mono text-[11px] uppercase tracking-widest text-violet">
               Recharge ton temps
             </p>
-            <h2 className="mt-2 font-display text-3xl italic sm:text-4xl">
+            <h2 className="mt-2 font-display text-2xl italic sm:text-3xl md:text-4xl">
               Choisis{" "}
               <span className="bg-[length:200%_auto] bg-clip-text text-transparent bg-gradient-to-r from-jaune via-violet to-mirage animate-[text-shimmer_5s_linear_infinite]">
                 ton offre
@@ -1296,7 +1212,6 @@ export default function Dashboard() {
               Direct). Une fois épuisé, recharge en quelques secondes pour continuer.
             </p>
 
-            {/* Explication rapide en 3 points */}
             <div className="mt-8 grid gap-4 text-left sm:grid-cols-3">
               <div className="carte-animee rounded-xl border border-sand-dim/15 bg-umber/60 backdrop-blur-md p-4">
                 <p className="font-mono text-xs text-mirage">01</p>
@@ -1325,24 +1240,20 @@ export default function Dashboard() {
             <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {OFFRES.map((offre) => {
                 const accent = offre.couleur;
-                // Le violet est trop sombre pour du texte "ink" (noir) — on garde
-                // ink sur mirage/ember/jaune mais on passe en blanc sur violet.
                 const texteBadge = "text-ink";
                 return (
                   <div
                     key={offre.id}
-                    className={`carte-animee group relative overflow-hidden rounded-[2rem] border-2 p-7 text-left transition-all duration-300 hover:-translate-y-1 border-${accent}/50`}
+                    className={`carte-animee group relative overflow-hidden rounded-[2rem] border-2 p-5 text-left transition-all duration-300 hover:-translate-y-1 border-${accent}/50 sm:p-7`}
                     style={{
                       background:
                         "radial-gradient(140% 140% at 0% 0%, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 45%, transparent 70%)",
                     }}
                   >
-                    {/* Lueur douce en fond, pas de bordure rectangulaire */}
                     <div
                       className={`pointer-events-none absolute -top-16 -right-16 h-40 w-40 rounded-full blur-3xl transition-opacity duration-300 opacity-30 group-hover:opacity-50 bg-${accent}`}
                     />
 
-                    {/* Durée de validité — coin haut droit de la carte */}
                     <span
                       className={`absolute top-5 right-5 font-mono text-xs font-bold text-${accent}`}
                     >
@@ -1355,15 +1266,14 @@ export default function Dashboard() {
                       {offre.badge}
                     </span>
 
-                    <p className="mt-4 font-display text-2xl italic">{offre.titre}</p>
-                    <p className={`text-xl font-bold text-${accent}`}>{offre.duree}</p>
+                    <p className="mt-4 font-display text-xl italic sm:text-2xl">{offre.titre}</p>
+                    <p className={`text-lg font-bold text-${accent} sm:text-xl`}>{offre.duree}</p>
                     <p className="text-xs text-sand-dim">de transformation</p>
 
-                    <p className={`mt-3 font-mono text-3xl text-${accent}`}>
+                    <p className={`mt-3 font-mono text-2xl text-${accent} sm:text-3xl`}>
                       {offre.uniteFCFA}
                     </p>
 
-                    {/* Liste des fonctionnalités de l'offre, remplace l'ancien texte descriptif */}
                     <ul className="mt-5 space-y-1.5">
                       {offre.fonctionnalites.map((fonctionnalite, i) => (
                         <li key={i} className="flex items-start gap-2 text-sm text-sand-dim">
@@ -1384,18 +1294,17 @@ export default function Dashboard() {
               })}
             </div>
 
-            {/* Bloc "Tous les paiements acceptés" — rectangle */}
-            <div className="carte-animee mt-12 rounded-2xl border border-mirage/25 bg-umber/60 backdrop-blur-md p-8 shadow-[0_0_40px_-12px_theme(colors.mirage)]">
+            <div className="carte-animee mt-12 rounded-2xl border border-mirage/25 bg-umber/60 backdrop-blur-md p-5 shadow-[0_0_40px_-12px_theme(colors.mirage)] sm:p-8">
               <p className="font-mono text-xs uppercase tracking-widest text-mirage">
                 Nous acceptons tous les paiements
               </p>
-              <div className="mt-6 flex flex-wrap items-center justify-center gap-6 sm:gap-8">
+              <div className="mt-6 grid grid-cols-3 place-items-center gap-4 sm:flex sm:flex-wrap sm:justify-center sm:gap-8">
                 {MOYENS_PAIEMENT.map((moyen) => (
                   <div key={moyen.id} className="flex flex-col items-center gap-2">
-                    <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-xl bg-ink ring-1 ring-sand-dim/15 sm:h-20 sm:w-20">
+                    <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-xl bg-ink ring-1 ring-sand-dim/15 sm:h-16 sm:w-16 md:h-20 md:w-20">
                       <img src={moyen.logo} alt={moyen.nom} className="h-full w-full object-cover" />
                     </div>
-                    <span className="text-xs text-sand-dim">{moyen.nom}</span>
+                    <span className="text-center text-[11px] text-sand-dim sm:text-xs">{moyen.nom}</span>
                   </div>
                 ))}
               </div>
@@ -1406,7 +1315,6 @@ export default function Dashboard() {
           </div>
         </section>
 
-        {/* Programme d'affiliation */}
         <Affiliation utilisateur={utilisateur} />
 
         {/* Modal de recharge */}
@@ -1417,10 +1325,10 @@ export default function Dashboard() {
           >
             <div
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-md rounded-2xl border border-sand-dim/15 bg-umber p-6"
+              className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-2xl border border-sand-dim/15 bg-umber p-4 sm:p-6"
             >
               <div className="flex items-center justify-between">
-                <h2 className="font-display text-2xl italic">
+                <h2 className="font-display text-xl italic sm:text-2xl">
                   Recharger{" "}
                   <span className="bg-[length:200%_auto] bg-clip-text text-transparent bg-gradient-to-r from-mirage via-ember to-violet animate-[text-shimmer_5s_linear_infinite]">
                     ton temps
@@ -1444,11 +1352,11 @@ export default function Dashboard() {
                       <button
                         key={offre.id}
                         onClick={() => choisirOffreDansModal(offre.id)}
-                        className="flex w-full items-center justify-between rounded-xl border border-sand-dim/15 px-4 py-3 text-left transition-colors duration-200 hover:border-sand-dim/30"
+                        className="flex w-full items-center justify-between gap-2 rounded-xl border border-sand-dim/15 px-3 py-3 text-left transition-colors duration-200 hover:border-sand-dim/30 sm:px-4"
                       >
                         <div className="flex flex-col items-start gap-1">
-                          <div className="flex items-center gap-2">
-                            <span className={`font-mono text-lg font-bold text-${offre.couleur}`}>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className={`font-mono text-base font-bold text-${offre.couleur} sm:text-lg`}>
                               {offre.duree}
                             </span>
                             {offre.populaire && (
@@ -1461,14 +1369,13 @@ export default function Dashboard() {
                             {offre.dureeValiditeJours}jours
                           </span>
                         </div>
-                        <span className="font-mono text-mirage">{offre.uniteFCFA}</span>
+                        <span className="whitespace-nowrap font-mono text-mirage">{offre.uniteFCFA}</span>
                       </button>
                     ))}
                   </div>
                 </>
               ) : (
                 <>
-                  {/* Rappel joli du pack déjà choisi */}
                   {offreChoisie && (
                     <div
                       className={`carte-animee relative mt-4 overflow-hidden rounded-2xl border p-4 border-${offreChoisie.couleur}/40`}
@@ -1480,14 +1387,14 @@ export default function Dashboard() {
                       <div
                         className={`pointer-events-none absolute -top-10 -right-10 h-28 w-28 rounded-full blur-3xl opacity-30 bg-${offreChoisie.couleur}`}
                       />
-                      <div className="relative flex items-center justify-between">
+                      <div className="relative flex flex-wrap items-center justify-between gap-2">
                         <div>
                           <p className="font-display text-lg italic">{offreChoisie.titre}</p>
                           <p className={`font-mono text-sm font-bold text-${offreChoisie.couleur}`}>
                             {offreChoisie.duree} · {offreChoisie.dureeValiditeJours}jours
                           </p>
                         </div>
-                        <p className={`font-mono text-2xl font-extrabold text-${offreChoisie.couleur}`}>
+                        <p className={`font-mono text-xl font-extrabold text-${offreChoisie.couleur} sm:text-2xl`}>
                           {offreChoisie.uniteFCFA}
                         </p>
                       </div>

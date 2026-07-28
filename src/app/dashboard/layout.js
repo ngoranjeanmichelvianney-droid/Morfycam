@@ -5,7 +5,7 @@ export default function DashboardLayout({ children }) {
   return (
     <div className="flex h-screen flex-col">
       {/* Header : garde sa hauteur naturelle, ne défile jamais */}
-      
+     
 
       {/* Zone en dessous : se partage le reste de l'écran (100vh - hauteur du Header) */}
       <div className="flex flex-1 overflow-hidden">
