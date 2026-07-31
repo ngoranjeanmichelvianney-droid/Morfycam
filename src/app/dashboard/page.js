@@ -119,16 +119,6 @@ const MOYENS_PAIEMENT = [
   { id: "djamo", nom: "Djamo", logo: "/logos/L5.jpeg", automatise: false },
 ];
 
-const LIENS_PAIEMENT = {
-  "10k": { wave: "https://wave.com/pay/REMPLACER_10K", orange_money: "https://om.ci/pay/REMPLACER_10K" },
-  "20k": { wave: "https://wave.com/pay/REMPLACER_20K", orange_money: "https://om.ci/pay/REMPLACER_20K" },
-  "40k": { wave: "https://wave.com/pay/REMPLACER_40K", orange_money: "https://om.ci/pay/REMPLACER_40K" },
-  "60k": { wave: "https://wave.com/pay/REMPLACER_60K", orange_money: "https://om.ci/pay/REMPLACER_60K" },
-  "100k": { wave: "https://wave.com/pay/REMPLACER_100K", orange_money: "https://om.ci/pay/REMPLACER_100K" },
-};
-
-const DELAI_EXPIRATION_MS = 30 * 60 * 1000;
-
 const STYLES_DISPONIBLES = [
   { id: null, label: "Aucun effet" },
   { id: "cartoon vibrant, contours nets, couleurs saturées", label: "Cartoon" },
@@ -199,11 +189,6 @@ export default function Dashboard() {
 
   const [avatarsEnregistres, setAvatarsEnregistres] = useState([]);
   const [enregistrementAvatarEnCours, setEnregistrementAvatarEnCours] = useState(false);
-
-  const [modalRechargeOuvert, setModalRechargeOuvert] = useState(false);
-  const [offreSelectionnee, setOffreSelectionnee] = useState(null);
-  const [etapeModal, setEtapeModal] = useState("offres");
-  const [envoiDemandeEnCours, setEnvoiDemandeEnCours] = useState(false);
 
   const phrasesMarketing = [
     "Deviens qui tu veux, en direct, sans montage.",
@@ -556,55 +541,6 @@ export default function Dashboard() {
 
   const toggleCamera = () => (cameraActive ? arreterCamera() : demarrerCamera());
 
-  function ouvrirModalRecharge() {
-    setOffreSelectionnee(null);
-    setEtapeModal("offres");
-    setModalRechargeOuvert(true);
-  }
-
-  function ouvrirModalAvecOffre(idOffre) {
-    setOffreSelectionnee(idOffre);
-    setEtapeModal("paiement");
-    setModalRechargeOuvert(true);
-  }
-
-  function fermerModalRecharge() {
-    setModalRechargeOuvert(false);
-  }
-
-  function choisirOffreDansModal(idOffre) {
-    setOffreSelectionnee(idOffre);
-    setEtapeModal("paiement");
-  }
-
-  async function payerAvec(moyen) {
-    if (!moyen.automatise || !utilisateur?.id || !offreSelectionnee) return;
-
-    const lien = LIENS_PAIEMENT[offreSelectionnee]?.[moyen.idMoyenAuto];
-    if (!lien) return;
-
-    const offre = OFFRES.find((o) => o.id === offreSelectionnee);
-    if (!offre) return;
-
-    setEnvoiDemandeEnCours(true);
-    const { error } = await supabase.from("demandes_recharge").insert({
-      utilisateur_id: utilisateur.id,
-      pack_id: offre.id,
-      montant_fcfa: offre.prix,
-      moyen_paiement: moyen.idMoyenAuto,
-      statut: "en_attente",
-    });
-    setEnvoiDemandeEnCours(false);
-
-    if (error) {
-      console.error("Erreur création de la demande de recharge :", error);
-    }
-
-    window.open(lien, "_blank", "noopener,noreferrer");
-  }
-
-  const offreChoisie = OFFRES.find((o) => o.id === offreSelectionnee);
-
   const prenom = utilisateur?.user_metadata?.nom_affichage?.split(" ")[0];
 
   return (
@@ -659,16 +595,16 @@ export default function Dashboard() {
         <div className="dashboard-orb-1" />
         <div className="dashboard-orb-2" />
 
-        {/* Bandeau d'alerte recharge */}
+        {/* Bandeau d'alerte recharge — dirige directement vers /paiement */}
         {soldeCharge && secondesRestantes <= 0 && (
           <div className="carte-animee flex flex-col items-center justify-center gap-2 bg-gradient-to-r from-ember to-mirage px-4 py-3 text-center text-xs text-ink sm:flex-row sm:gap-3 sm:py-2 sm:text-sm sm:font-medium">
             <span>Ton temps est épuisé — recharge pour continuer le swap</span>
-            <button
-              onClick={ouvrirModalRecharge}
+            <a
+              href="/paiement"
               className="rounded-full bg-ink px-3 py-1 text-xs font-semibold text-sand transition-opacity hover:opacity-80"
             >
               Recharger
-            </button>
+            </a>
           </div>
         )}
 
@@ -690,12 +626,12 @@ export default function Dashboard() {
           </div>
 
           <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:gap-3">
-            <button
-              onClick={ouvrirModalRecharge}
+            <a
+              href="/paiement"
               className="rounded-full bg-ember px-4 py-1.5 text-xs font-medium text-ink transition-all duration-200 hover:opacity-90"
             >
               Recharger
-            </button>
+            </a>
 
             <div className="flex overflow-hidden rounded-full border border-sand-dim/20 text-xs font-medium">
               <button
@@ -784,12 +720,12 @@ export default function Dashboard() {
             </p>
 
             {secondesRestantes <= 60 && (
-              <button
-                onClick={ouvrirModalRecharge}
-                className="mt-4 rounded-full bg-ember px-6 py-2 text-sm font-semibold text-ink transition-all duration-200 hover:opacity-90 hover:shadow-[0_0_24px_-6px_theme(colors.ember)]"
+              <a
+                href="/paiement"
+                className="mt-4 inline-block rounded-full bg-ember px-6 py-2 text-sm font-semibold text-ink transition-all duration-200 hover:opacity-90 hover:shadow-[0_0_24px_-6px_theme(colors.ember)]"
               >
                 Recharger maintenant
-              </button>
+              </a>
             )}
           </div>
         </section>
@@ -1194,7 +1130,7 @@ export default function Dashboard() {
           </div>
         </section>
 
-        {/* Tarifs */}
+        {/* Tarifs — chaque carte dirige directement vers /paiement */}
         <section id="tarifs" className="border-t border-sand-dim/15 px-4 py-12 sm:px-6 sm:py-16">
           <div className="mx-auto max-w-5xl text-center">
             <p className="font-mono text-[11px] uppercase tracking-widest text-violet">
@@ -1283,12 +1219,12 @@ export default function Dashboard() {
                       ))}
                     </ul>
 
-                    <button
-                      onClick={() => ouvrirModalAvecOffre(offre.id)}
-                      className={`mt-6 w-full rounded-full px-5 py-2.5 text-sm font-medium transition-all duration-200 hover:opacity-90 ${texteBadge} bg-${accent}`}
+                    <a
+                      href={`/paiement?pack=${offre.id}`}
+                      className={`mt-6 block w-full rounded-full px-5 py-2.5 text-center text-sm font-medium transition-all duration-200 hover:opacity-90 ${texteBadge} bg-${accent}`}
                     >
                       Choisir cette offre
-                    </button>
+                    </a>
                   </div>
                 );
               })}
@@ -1309,145 +1245,13 @@ export default function Dashboard() {
                 ))}
               </div>
               <p className="mt-6 text-xs text-sand-dim/70">
-                Paiement sécurisé, activation automatique dès la confirmation.
+                Paiement sécurisé, activation manuelle après vérification.
               </p>
             </div>
           </div>
         </section>
 
         <Affiliation utilisateur={utilisateur} />
-
-        {/* Modal de recharge */}
-        {modalRechargeOuvert && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-ink/80 px-4 backdrop-blur-sm"
-            onClick={fermerModalRecharge}
-          >
-            <div
-              onClick={(e) => e.stopPropagation()}
-              className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-2xl border border-sand-dim/15 bg-umber p-4 sm:p-6"
-            >
-              <div className="flex items-center justify-between">
-                <h2 className="font-display text-xl italic sm:text-2xl">
-                  Recharger{" "}
-                  <span className="bg-[length:200%_auto] bg-clip-text text-transparent bg-gradient-to-r from-mirage via-ember to-violet animate-[text-shimmer_5s_linear_infinite]">
-                    ton temps
-                  </span>
-                </h2>
-                <button
-                  onClick={fermerModalRecharge}
-                  className="text-sand-dim transition-colors hover:text-sand"
-                  aria-label="Fermer"
-                >
-                  ✕
-                </button>
-              </div>
-
-              {etapeModal === "offres" ? (
-                <>
-                  <p className="mt-1 text-sm text-sand-dim">Choisis ton offre.</p>
-
-                  <div className="mt-5 space-y-2">
-                    {OFFRES.map((offre) => (
-                      <button
-                        key={offre.id}
-                        onClick={() => choisirOffreDansModal(offre.id)}
-                        className="flex w-full items-center justify-between gap-2 rounded-xl border border-sand-dim/15 px-3 py-3 text-left transition-colors duration-200 hover:border-sand-dim/30 sm:px-4"
-                      >
-                        <div className="flex flex-col items-start gap-1">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className={`font-mono text-base font-bold text-${offre.couleur} sm:text-lg`}>
-                              {offre.duree}
-                            </span>
-                            {offre.populaire && (
-                              <span className="rounded-full bg-ember px-2 py-0.5 text-[10px] font-medium text-ink">
-                                Populaire
-                              </span>
-                            )}
-                          </div>
-                          <span className={`font-mono text-sm font-bold text-${offre.couleur}`}>
-                            {offre.dureeValiditeJours}jours
-                          </span>
-                        </div>
-                        <span className="whitespace-nowrap font-mono text-mirage">{offre.uniteFCFA}</span>
-                      </button>
-                    ))}
-                  </div>
-                </>
-              ) : (
-                <>
-                  {offreChoisie && (
-                    <div
-                      className={`carte-animee relative mt-4 overflow-hidden rounded-2xl border p-4 border-${offreChoisie.couleur}/40`}
-                      style={{
-                        background:
-                          "radial-gradient(140% 140% at 0% 0%, rgba(255,255,255,0.06) 0%, transparent 70%)",
-                      }}
-                    >
-                      <div
-                        className={`pointer-events-none absolute -top-10 -right-10 h-28 w-28 rounded-full blur-3xl opacity-30 bg-${offreChoisie.couleur}`}
-                      />
-                      <div className="relative flex flex-wrap items-center justify-between gap-2">
-                        <div>
-                          <p className="font-display text-lg italic">{offreChoisie.titre}</p>
-                          <p className={`font-mono text-sm font-bold text-${offreChoisie.couleur}`}>
-                            {offreChoisie.duree} · {offreChoisie.dureeValiditeJours}jours
-                          </p>
-                        </div>
-                        <p className={`font-mono text-xl font-extrabold text-${offreChoisie.couleur} sm:text-2xl`}>
-                          {offreChoisie.uniteFCFA}
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => setEtapeModal("offres")}
-                        className="relative mt-2 text-xs text-sand-dim underline-offset-2 transition-colors hover:text-sand hover:underline"
-                      >
-                        Changer d&apos;offre
-                      </button>
-                    </div>
-                  )}
-
-                  <p className="mt-5 font-mono text-[11px] uppercase tracking-widest text-jaune">
-                    Choisis ton moyen de paiement
-                  </p>
-                  <p className="mt-1 text-xs text-sand-dim">
-                    Tu es redirigé vers la page de paiement, ton temps est
-                    crédité automatiquement une fois payé.
-                  </p>
-
-                  <div className="mt-4 grid grid-cols-2 gap-3">
-                    {MOYENS_PAIEMENT.map((moyen) => (
-                      <button
-                        key={moyen.id}
-                        onClick={() => payerAvec(moyen)}
-                        disabled={!moyen.automatise || envoiDemandeEnCours}
-                        className={`group relative flex flex-col items-center gap-2 overflow-hidden rounded-2xl border px-3 py-4 text-sm transition-all duration-200 ${
-                          moyen.automatise
-                            ? "border-sand-dim/15 text-sand hover:-translate-y-0.5 hover:border-mirage hover:shadow-[0_0_20px_-8px_theme(colors.mirage)] disabled:opacity-60"
-                            : "cursor-not-allowed border-sand-dim/10 text-sand-dim/40"
-                        }`}
-                      >
-                        <img
-                          src={moyen.logo}
-                          alt={moyen.nom}
-                          className={`h-9 w-9 rounded-full object-cover ${
-                            moyen.automatise ? "" : "grayscale opacity-50"
-                          }`}
-                        />
-                        <span>{moyen.nom}</span>
-                        {!moyen.automatise && (
-                          <span className="absolute top-1.5 right-1.5 rounded-full bg-ink px-1.5 py-0.5 text-[9px] text-sand-dim">
-                            Bientôt
-                          </span>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        )}
       </main>
     </>
   );
